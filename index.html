@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game - 100% Funcional</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        /* Tela de carregamento - IDÊNTICA À SOLICITADA */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #070711, #0a0a18);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.8s ease-out;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .logo-container {
+            position: relative;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #c89253, #f9d8a1, #c89253);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(200, 146, 83, 0.5);
+            position: relative;
+            letter-spacing: 2px;
+        }
+        
+        .logo::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #c89253, transparent);
+            border-radius: 50%;
+        }
+        
+        .loading-subtitle {
+            color: #a0a0b0;
+            font-size: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .loading-tip {
+            color: #7a7a8c;
+            font-style: italic;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 0 10px;
+        }
+        
+        .loading-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #8a6534, #c89253, #f9d8a1);
+            border-radius: 10px;
+            transition: width 0.7s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: loadingShine 1.5s infinite;
+        }
+        
+        @keyframes loadingShine {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+        
+        .loading-percentage {
+            font-size: 0.9rem;
+            color: #c89253;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        .brand {
+            position: absolute;
+            bottom: 20px;
+            color: #5a5a6c;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            font-size: 2.5rem;
+        }
+        
+        #game-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        #game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 400px;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        
+        #score, #lives {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        #score {
+            color: #4CAF50;
+        }
+        
+        #lives {
+            color: #FF5252;
+        }
+        
+        canvas {
+            background-color: #111;
+            border-radius: 8px;
+            display: block;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        #controls {
+            margin: 15px 0;
+            text-align: center;
+            color: #aaa;
+        }
+        
+        #notification {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #FFD700, #FF9800);
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+            z-index: 100;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            width: 300px;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        #notification h2 {
+            margin-top: 0;
+            color: #D35400;
+        }
+        
+        #game-over {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #E74C3C, #C0392B);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            width: 300px;
+        }
+        
+        #ad-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            width: 320px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        #ad-container h2 {
+            margin-top: 0;
+            color: #FFD700;
+        }
+        
+        #ad-container p {
+            margin: 10px 0;
+        }
+        
+        #ad-container button {
+            background-color: #FFD700;
+            color: #333;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        #ad-container #close-ad {
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid #fff;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+        }
+        
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 3px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            transform: translateY(-10px);
+        }
+        
+        .control-btn {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-btn:active {
+            background: rgba(76, 175, 80, 0.5);
+            transform: scale(0.95);
+        }
+        
+        #up { grid-column: 2; grid-row: 1; }
+        #left { grid-column: 1; grid-row: 2; }
+        #right { grid-column: 3; grid-row: 2; }
+        #down { grid-column: 2; grid-row: 3; }
+        
+        @media (max-width: 500px) {
+            #game-header {
+                width: 100%;
+                max-width: 400px;
+            }
+            
+            canvas {
+                width: 100%;
+                height: auto;
+                max-width: 400px;
+            }
+            
+            .control-btn {
+                width: 75px;
+                height: 75px;
+                font-size: 1.8rem;
+            }
+            
+            .control-buttons {
+                grid-gap: 2px;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Tela de carregamento idêntica à solicitada -->
+    <div class="loading-screen">
+        <div class="logo-container">
+            <div class="logo">OS ALFAS</div>
+        </div>
+        
+        <div class="loading-content">
+            <div class="loading-tip" id="loading-tip">Carregando recursos do jogo...</div>
+            
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="progress"></div>
+            </div>
+            
+            <div class="loading-percentage" id="loading-percentage">0%</div>
+        </div>
+        
+        <div class="brand">ALFAS ENTERTAINMENT © 2023</div>
+    </div>
+    
+    <h1>Jogo da Cobrinha</h1>
+    
+    <div id="game-header">
+        <div id="score">Alfas: 0</div>
+        <div id="lives">Vidas: 8</div>
+    </div>
+    
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+    </div>
+    
+    <div id="controls">
+        Use as setas do teclado para mover a cobra
+    </div>
+    
+    <div class="control-buttons">
+        <button id="up" class="control-btn">↑</button>
+        <button id="left" class="control-btn">←</button>
+        <button id="right" class="control-btn">→</button>
+        <button id="down" class="control-btn">↓</button>
+    </div>
+    
+    <div id="notification">
+        <h2>Parabéns!</h2>
+        <p>Você alcançou 1000 Alfas!</p>
+        <p>Clique aqui para a roleta Alfa</p>
+    </div>
+    
+    <div id="game-over">
+        <h2>Game Over!</h2>
+        <p>Suas chances acabaram!</p>
+        <p>Redirecionando em <span id="countdown">5</span> segundos...</p>
+        <button id="restart-button">Jogar Novamente</button>
+    </div>
+    
+    <div id="ad-container">
+        <h2>Apoie nosso jogo!</h2>
+        <p>Faça uma doação para continuar jogando</p>
+        <p>e ganhe vidas extras!</p>
+        <button id="donate-button">Fazer Doação</button>
+        <button id="close-ad">Continuar sem doar</button>
+    </div>
+
+    <script>
+        // Configurações do jogo
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const notification = document.getElementById('notification');
+        const gameOverScreen = document.getElementById('game-over');
+        const countdownElement = document.getElementById('countdown');
+        const restartButton = document.getElementById('restart-button');
+        const adContainer = document.getElementById('ad-container');
+        const donateButton = document.getElementById('donate-button');
+        const closeAdButton = document.getElementById('close-ad');
+        const loadingScreen = document.querySelector('.loading-screen');
+        const progressBar = document.querySelector('.loading-bar');
+        const loadingPercentage = document.getElementById('loading-percentage');
+        const loadingTip = document.getElementById('loading-tip');
+        
+        const gridSize = 20;
+        const gridWidth = canvas.width / gridSize;
+        const gridHeight = canvas.height / gridSize;
+        
+        // Variáveis do jogo
+        let snake = [];
+        let food = {};
+        let direction = 'right';
+        let nextDirection = 'right';
+        let score = 0;
+        let lives = 8;
+        let gameSpeed = 130;
+        let gameRunning = false;
+        let gameInterval;
+        let adShownCount = 0;
+        
+        // Cores
+        const colors = ['#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE', 
+                       '#448AFF', '#40C4FF', '#18FFFF', '#64FFDA', '#69F0AE', 
+                       '#B2FF59', '#EEFF41', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+        
+        // Dicas de carregamento
+        const loadingTips = [
+            "Dica: Colete as frutas coloridas para ganhar pontos!",
+            "Dica: Cuidado para não bater nas paredes ou no próprio corpo!",
+            "Dica: Cada fruta colorida vale 10 Alfas!",
+            "Dica: Você tem 8 vidas, use-as com sabedoria!",
+            "Dica: A cobrinha fica mais rápida conforme sua pontuação aumenta!"
+        ];
+        
+        // Função de carregamento
+        function simulateLoading() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 6) + 3;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = `${progress}%`;
+                loadingPercentage.textContent = `${progress}%`;
+                
+                // Atualizar dica a cada 25% de progresso
+                if (progress % 25 === 0) {
+                    loadingTip.textContent = loadingTips[Math.floor(Math.random() * loadingTips.length)];
+                }
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            initGame();
+                        }, 800);
+                    }, 800);
+                }
+            }, 100);
+        }
+        
+        // Inicializar o jogo
+        function initGame() {
+            // Inicializar a cobra
+            snake = [
+                {x: 5, y: 5, color: '#4CAF50'},
+                {x: 4, y: 5, color: '#4CAF50'},
+                {x: 3, y: 5, color: '#4CAF50'}
+            ];
+            
+            // Gerar comida
+            generateFood();
+            
+            // Resetar valores
+            direction = 'right';
+            nextDirection = 'right';
+            score = 0;
+            lives = 8;
+            gameSpeed = 130;
+            
+            // Atualizar UI
+            scoreElement.textContent = `Alfas: ${score}`;
+            livesElement.textContent = `Vidas: ${lives}`;
+            
+            // Parar jogo anterior se existir
+            if (gameInterval) clearInterval(gameInterval);
+            
+            // Iniciar o jogo
+            gameRunning = true;
+            gameInterval = setInterval(gameLoop, gameSpeed);
+            
+            // Esconder telas de game over e notificação
+            gameOverScreen.style.display = 'none';
+            notification.style.display = 'none';
+            adContainer.style.display = 'none';
+        }
+        
+        // Gerar comida
+        function generateFood() {
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            food = {
+                x: Math.floor(Math.random() * gridWidth),
+                y: Math.floor(Math.random() * gridHeight),
+                color: randomColor
+            };
+            
+            // Verificar se a comida não está em cima da cobra
+            for (let segment of snake) {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood();
+                    break;
+                }
+            }
+        }
+        
+        // Loop principal do jogo
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Atualizar direção
+            direction = nextDirection;
+            
+            // Calcular nova posição da cabeça
+            const head = {...snake[0]};
+            
+            switch(direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+            
+            // Verificar colisões com as paredes (modo teletransporte)
+            if (head.x < 0) head.x = gridWidth - 1;
+            if (head.x >= gridWidth) head.x = 0;
+            if (head.y < 0) head.y = gridHeight - 1;
+            if (head.y >= gridHeight) head.y = 0;
+            
+            // Verificar colisão com o próprio corpo
+            for (let i = 2; i < snake.length; i++) {
+                if (snake[i].x === head.x && snake[i].y === head.y) {
+                    loseLife();
+                    return;
+                }
+            }
+            
+            // Adicionar nova cabeça
+            snake.unshift(head);
+            
+            // Verificar se comeu a comida
+            if (head.x === food.x && head.y === food.y) {
+                // Aumentar pontuação
+                score += 10;
+                scoreElement.textContent = `Alfas: ${score}`;
+                
+                // Adicionar uma parte com a cor da comida
+                snake.push({...snake[snake.length-1], color: food.color});
+                
+                // Verificar se atingiu 1000 pontos
+                if (score >= 1000) {
+                    showNotification();
+                    return;
+                }
+                
+                // Gerar nova comida
+                generateFood();
+                
+                // Aumentar velocidade a cada 100 pontos
+                if (score % 100 === 0 && gameSpeed > 70) {
+                    gameSpeed -= 5;
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                }
+            } else {
+                // Remover cauda se não comeu
+                snake.pop();
+            }
+            
+            // Desenhar o jogo
+            draw();
+        }
+        
+        // Desenhar o jogo
+        function draw() {
+            // Limpar o canvas
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Desenhar grade de fundo
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 0.5;
+            for (let x = 0; x < gridWidth; x++) {
+                for (let y = 0; y < gridHeight; y++) {
+                    ctx.strokeRect(x * gridSize, y * gridSize, gridSize, gridSize);
+                }
+            }
+            
+            // Desenhar a comida
+            ctx.fillStyle = food.color;
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize / 2, 
+                food.y * gridSize + gridSize / 2, 
+                gridSize / 2, 
+               0, 
+                Math.PI * 2
+            );
+            ctx.fill();
+            
+            // Desenhar a cobra
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = segment.color;
+                
+                // Desenhar a cabeça um pouco maior
+                const size = index === 0 ? gridSize / 2 : gridSize / 2 - 1;
+                
+                ctx.beginPath();
+                ctx.arc(
+                    segment.x * gridSize + gridSize / 2, 
+                    segment.y * gridSize + gridSize / 2, 
+                    size, 
+                    0, 
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Desenhar olhos na cabeça
+                if (index === 0) {
+                    ctx.fillStyle = '#000';
+                    
+                    // Posicionar os olhos baseado na direção
+                    let eyeOffsetX = 0;
+                    let eyeOffsetY = 0;
+                    
+                    if (direction === 'right') eyeOffsetX = 5;
+                    else if (direction === 'left') eyeOffsetX = -5;
+                    else if (direction === 'up') eyeOffsetY = -5;
+                    else if (direction === 'down') eyeOffsetY = 5;
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffsetX/2, 
+                        segment.y * gridSize + gridSize / 2 + eyeOffsetY/2, 
+                        3, 
+                        0, 
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            });
+        }
+        
+        // Perder uma vida
+        function loseLife() {
+            lives--;
+            livesElement.textContent = `Vidas: ${lives}`;
+            
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                // Mostrar anúncio a cada 2 vidas perdidas
+                if (lives % 2 === 0 && adShownCount < 2) {
+                    showAd();
+                    adShownCount++;
+                    return;
+                }
+                
+                // Reposicionar a cobra
+                resetSnake();
+            }
+        }
+        
+        // Reposicionar a cobra
+        function resetSnake() {
+            snake = [
+                {x: 5, y: 5, color: '#4CAF50'},
+                {x: 4, y: 5, color: '#4CAF50'},
+                {x: 3, y: 5, color: '#4CAF50'}
+            ];
+            
+            direction = 'right';
+            nextDirection = 'right';
+            
+            // Efeito visual
+            canvas.style.backgroundColor = '#ff0000';
+            setTimeout(() => {
+                canvas.style.backgroundColor = '#111';
+            }, 100);
+        }
+        
+        // Mostrar anúncio
+        function showAd() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            adContainer.style.display = 'block';
+        }
+        
+        // Mostrar notificação
+        function showNotification() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            notification.style.display = 'block';
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            gameOverScreen.style.display = 'block';
+            
+            let countdown = 5;
+            countdownElement.textContent = countdown;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    // Substitua pelo link de redirecionamento
+                    window.location.href = 'https://exemplo.com/game-over';
+                }
+            }, 1000);
+        }
+        
+        // Controles
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (direction !== 'down') nextDirection = 'up';
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (direction !== 'up') nextDirection = 'down';
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (direction !== 'right') nextDirection = 'left';
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (direction !== 'left') nextDirection = 'right';
+                    break;
+                case ' ':
+                    // Pausar com espaço
+                    if (gameRunning) {
+                        clearInterval(gameInterval);
+                        gameRunning = false;
+                    } else {
+                        gameRunning = true;
+                        gameInterval = setInterval(gameLoop, gameSpeed);
+                    }
+                    break;
+            }
+        });
+        
+        // Controles de toque
+        document.getElementById('up').addEventListener('click', () => {
+            if (direction !== 'down') nextDirection = 'up';
+        });
+        
+        document.getElementById('down').addEventListener('click', () => {
+            if (direction !== 'up') nextDirection = 'down';
+        });
+        
+        document.getElementById('left').addEventListener('click', () => {
+            if (direction !== 'right') nextDirection = 'left';
+        });
+        
+        document.getElementById('right').addEventListener('click', () => {
+            if (direction !== 'left') nextDirection = 'right';
+        });
+        
+        // Botões de anúncio
+        donateButton.addEventListener('click', () => {
+            // Substitua pelo link de doação
+            window.location.href = 'https://exemplo.com/doacao';
+        });
+        
+        closeAdButton.addEventListener('click', () => {
+            adContainer.style.display = 'none';
+            resetSnake();
+            gameRunning = true;
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        });
+        
+        // Redirecionar quando clicar na notificação
+        notification.addEventListener('click', () => {
+            // Substitua pelo link da roleta Alfa
+            window.location.href = 'https://exemplo.com/roleta-alfa';
+        });
+        
+        // Reiniciar o jogo
+        restartButton.addEventListener('click', initGame);
+        
+        // Iniciar o carregamento quando a página carregar
+        window.addEventListener('load', simulateLoading);
+    </script>
+</body>
+</html>
