@@ -22,7 +22,7 @@
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             color: white;
             padding: 20px;
-            overflow: hidden;
+            overflow-x: hidden;
         }
         
         /* Tela de carregamento */
@@ -154,6 +154,7 @@
             margin-bottom: 10px;
             text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
             font-size: 2.5rem;
+            text-align: center;
         }
         
         #game-container {
@@ -349,6 +350,25 @@
             font-size: 0.9rem;
         }
         
+        #audio-permission {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 101;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 20px rgba(106, 90, 205, 0.7);
+        }
+        
+        #audio-permission p {
+            margin-bottom: 10px;
+        }
+        
         @media (max-width: 500px) {
             #game-header {
                 width: 100%;
@@ -398,6 +418,15 @@
                 width: 55px;
                 height: 55px;
                 font-size: 1.4rem;
+            }
+            
+            h1 {
+                margin-bottom: 5px;
+                font-size: 1.8rem;
+            }
+            
+            #controls {
+                margin: 10px 0;
             }
         }
     </style>
@@ -471,6 +500,11 @@
         <button id="donate-button">Fazer Doação</button>
         <button id="close-ad">Continuar sem doar</button>
     </div>
+    
+    <div id="audio-permission">
+        <p>Para uma experiência completa, ative os sons!</p>
+        <button id="enable-audio">Ativar Sons</button>
+    </div>
 
     <!-- Elementos de áudio -->
     <audio id="backgroundMusic" loop>
@@ -508,6 +542,8 @@
         const loadingTip = document.getElementById('loading-tip');
         const toggleMusicBtn = document.getElementById('toggleMusic');
         const toggleSoundBtn = document.getElementById('toggleSound');
+        const enableAudioBtn = document.getElementById('enable-audio');
+        const audioPermission = document.getElementById('audio-permission');
         
         // Elementos de áudio
         const backgroundMusic = document.getElementById('backgroundMusic');
@@ -530,8 +566,9 @@
         let gameRunning = false;
         let gameInterval;
         let adShownCount = 0;
-        let musicEnabled = true;
-        let soundEnabled = true;
+        let musicEnabled = false;
+        let soundEnabled = false;
+        let audioInitialized = false;
         
         // Cores
         const colors = ['#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE', 
@@ -546,6 +583,32 @@
             "Dica: Você tem 8 vidas, use-as com sabedoria!",
             "Dica: A cobrinha fica mais rápida conforme sua pontuação aumenta!"
         ];
+        
+        // Função para inicializar áudio
+        function initializeAudio() {
+            if (audioInitialized) return;
+            
+            // Configurar volumes
+            backgroundMusic.volume = 0.5;
+            moveSound.volume = 0.7;
+            eatSound.volume = 0.7;
+            gameOverSound.volume = 0.7;
+            
+            // Tentar reproduzir um som silencioso para desbloquear o áudio
+            const silentSound = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+            silentSound.play().then(() => {
+                silentSound.pause();
+                audioInitialized = true;
+                audioPermission.style.display = 'none';
+                
+                // Ativar música e sons se solicitado
+                if (musicEnabled) {
+                    backgroundMusic.play().catch(e => console.log("Erro ao reproduzir música:", e));
+                }
+            }).catch(e => {
+                console.log("Não foi possível inicializar o áudio automaticamente:", e);
+            });
+        }
         
         // Função de carregamento
         function simulateLoading() {
@@ -604,12 +667,6 @@
             // Iniciar o jogo
             gameRunning = true;
             gameInterval = setInterval(gameLoop, gameSpeed);
-            
-            // Iniciar música de fundo
-            if (musicEnabled) {
-                backgroundMusic.volume = 0.5;
-                backgroundMusic.play().catch(e => console.log("Autoplay bloqueado. Use o botão para ativar a música."));
-            }
             
             // Esconder telas de game over e notificação
             gameOverScreen.style.display = 'none';
@@ -679,7 +736,7 @@
                 // Tocar som de comer
                 if (soundEnabled) {
                     eatSound.currentTime = 0;
-                    eatSound.play();
+                    eatSound.play().catch(e => console.log("Erro ao reproduzir som:", e));
                 }
                 
                 // Adicionar uma parte com a cor da comida
@@ -788,7 +845,7 @@
                 // Tocar som de game over
                 if (soundEnabled) {
                     gameOverSound.currentTime = 0;
-                    gameOverSound.play();
+                    gameOverSound.play().catch(e => console.log("Erro ao reproduzir som:", e));
                 }
                 gameOver();
             } else {
@@ -852,7 +909,7 @@
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
                     // Substitua pelo link de redirecionamento
-                    window.location.href = 'https://xallleep.github.io/OsAlfas/';
+                    window.location.href = 'https://exemplo.com/game-over';
                 }
             }, 1000);
         }
@@ -899,7 +956,7 @@
             // Tocar som de movimento se a direção mudou
             if (soundEnabled && previousDirection !== nextDirection) {
                 moveSound.currentTime = 0;
-                moveSound.play();
+                moveSound.play().catch(e => console.log("Erro ao reproduzir som:", e));
             }
         });
         
@@ -914,7 +971,7 @@
                     // Tocar som de movimento se a direção mudou
                     if (soundEnabled && previousDirection !== nextDirection) {
                         moveSound.currentTime = 0;
-                        moveSound.play();
+                        moveSound.play().catch(e => console.log("Erro ao reproduzir som:", e));
                     }
                 }
             });
@@ -928,7 +985,7 @@
         // Botões de anúncio
         donateButton.addEventListener('click', () => {
             // Substitua pelo link de doação
-            window.location.href = 'https://xallleep.github.io/Doe/';
+            window.location.href = 'https://exemplo.com/doacao';
         });
         
         closeAdButton.addEventListener('click', () => {
@@ -951,7 +1008,7 @@
         toggleMusicBtn.addEventListener('click', () => {
             musicEnabled = !musicEnabled;
             if (musicEnabled) {
-                backgroundMusic.play();
+                backgroundMusic.play().catch(e => console.log("Erro ao reproduzir música:", e));
                 toggleMusicBtn.textContent = '🔈 Música';
             } else {
                 backgroundMusic.pause();
@@ -962,6 +1019,16 @@
         toggleSoundBtn.addEventListener('click', () => {
             soundEnabled = !soundEnabled;
             toggleSoundBtn.textContent = soundEnabled ? '🔊 Sons' : '🔇 Sons';
+        });
+        
+        // Botão para ativar áudio
+        enableAudioBtn.addEventListener('click', () => {
+            initializeAudio();
+            musicEnabled = true;
+            soundEnabled = true;
+            toggleMusicBtn.textContent = '🔈 Música';
+            toggleSoundBtn.textContent = '🔊 Sons';
+            backgroundMusic.play().catch(e => console.log("Erro ao reproduzir música:", e));
         });
         
         // Iniciar o carregamento quando a página carregar
