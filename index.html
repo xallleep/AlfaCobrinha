@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake Game - 100% Funcional</title>
+    <title>Snake Game - Com Sons</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,7 @@
             overflow: hidden;
         }
         
-        /* Tela de carregamento - IDÊNTICA À SOLICITADA */
+        /* Tela de carregamento */
         .loading-screen {
             position: fixed;
             top: 0;
@@ -297,23 +297,29 @@
             box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
         }
         
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
         .control-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-gap: 3px;
-            margin-top: 15px;
+            grid-gap: 5px;
             margin-bottom: 10px;
-            transform: translateY(-10px);
         }
         
         .control-btn {
-            width: 85px;
-            height: 85px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
-            font-size: 2rem;
+            font-size: 1.8rem;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -331,6 +337,18 @@
         #right { grid-column: 3; grid-row: 2; }
         #down { grid-column: 2; grid-row: 3; }
         
+        .sound-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .sound-btn {
+            background-color: #6a5acd;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+        
         @media (max-width: 500px) {
             #game-header {
                 width: 100%;
@@ -344,20 +362,48 @@
             }
             
             .control-btn {
-                width: 75px;
-                height: 75px;
-                font-size: 1.8rem;
+                width: 65px;
+                height: 65px;
+                font-size: 1.6rem;
             }
             
             .control-buttons {
-                grid-gap: 2px;
+                grid-gap: 3px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            #game-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .controls-container {
                 margin-top: 10px;
+            }
+            
+            .control-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 1.4rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Tela de carregamento idêntica à solicitada -->
+    <!-- Tela de carregamento -->
     <div class="loading-screen">
         <div class="logo-container">
             <div class="logo">OS ALFAS</div>
@@ -391,11 +437,18 @@
         Use as setas do teclado para mover a cobra
     </div>
     
-    <div class="control-buttons">
-        <button id="up" class="control-btn">↑</button>
-        <button id="left" class="control-btn">←</button>
-        <button id="right" class="control-btn">→</button>
-        <button id="down" class="control-btn">↓</button>
+    <div class="controls-container">
+        <div class="control-buttons">
+            <button id="up" class="control-btn">↑</button>
+            <button id="left" class="control-btn">←</button>
+            <button id="right" class="control-btn">→</button>
+            <button id="down" class="control-btn">↓</button>
+        </div>
+        
+        <div class="sound-controls">
+            <button id="toggleMusic" class="sound-btn">🔈 Música</button>
+            <button id="toggleSound" class="sound-btn">🔊 Sons</button>
+        </div>
     </div>
     
     <div id="notification">
@@ -419,6 +472,23 @@
         <button id="close-ad">Continuar sem doar</button>
     </div>
 
+    <!-- Elementos de áudio -->
+    <audio id="backgroundMusic" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="moveSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="eatSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="gameOverSound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-funny-game-over-2878.mp3" type="audio/mpeg">
+    </audio>
+
     <script>
         // Configurações do jogo
         const canvas = document.getElementById('gameCanvas');
@@ -436,6 +506,14 @@
         const progressBar = document.querySelector('.loading-bar');
         const loadingPercentage = document.getElementById('loading-percentage');
         const loadingTip = document.getElementById('loading-tip');
+        const toggleMusicBtn = document.getElementById('toggleMusic');
+        const toggleSoundBtn = document.getElementById('toggleSound');
+        
+        // Elementos de áudio
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const moveSound = document.getElementById('moveSound');
+        const eatSound = document.getElementById('eatSound');
+        const gameOverSound = document.getElementById('gameOverSound');
         
         const gridSize = 20;
         const gridWidth = canvas.width / gridSize;
@@ -452,6 +530,8 @@
         let gameRunning = false;
         let gameInterval;
         let adShownCount = 0;
+        let musicEnabled = true;
+        let soundEnabled = true;
         
         // Cores
         const colors = ['#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE', 
@@ -525,6 +605,12 @@
             gameRunning = true;
             gameInterval = setInterval(gameLoop, gameSpeed);
             
+            // Iniciar música de fundo
+            if (musicEnabled) {
+                backgroundMusic.volume = 0.5;
+                backgroundMusic.play().catch(e => console.log("Autoplay bloqueado. Use o botão para ativar a música."));
+            }
+            
             // Esconder telas de game over e notificação
             gameOverScreen.style.display = 'none';
             notification.style.display = 'none';
@@ -589,6 +675,12 @@
                 // Aumentar pontuação
                 score += 10;
                 scoreElement.textContent = `Alfas: ${score}`;
+                
+                // Tocar som de comer
+                if (soundEnabled) {
+                    eatSound.currentTime = 0;
+                    eatSound.play();
+                }
                 
                 // Adicionar uma parte com a cor da comida
                 snake.push({...snake[snake.length-1], color: food.color});
@@ -693,6 +785,11 @@
             livesElement.textContent = `Vidas: ${lives}`;
             
             if (lives <= 0) {
+                // Tocar som de game over
+                if (soundEnabled) {
+                    gameOverSound.currentTime = 0;
+                    gameOverSound.play();
+                }
                 gameOver();
             } else {
                 // Mostrar anúncio a cada 2 vidas perdidas
@@ -755,7 +852,7 @@
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
                     // Substitua pelo link de redirecionamento
-                    window.location.href = 'https://exemplo.com/game-over';
+                    window.location.href = 'https://xallleep.github.io/OsAlfas/';
                 }
             }, 1000);
         }
@@ -763,6 +860,8 @@
         // Controles
         document.addEventListener('keydown', (e) => {
             if (!gameRunning) return;
+            
+            const previousDirection = nextDirection;
             
             switch(e.key) {
                 case 'ArrowUp':
@@ -796,29 +895,40 @@
                     }
                     break;
             }
+            
+            // Tocar som de movimento se a direção mudou
+            if (soundEnabled && previousDirection !== nextDirection) {
+                moveSound.currentTime = 0;
+                moveSound.play();
+            }
         });
         
         // Controles de toque
-        document.getElementById('up').addEventListener('click', () => {
-            if (direction !== 'down') nextDirection = 'up';
-        });
+        function setupTouchControl(buttonId, newDirection) {
+            const button = document.getElementById(buttonId);
+            button.addEventListener('click', () => {
+                if (direction !== newDirection) {
+                    const previousDirection = nextDirection;
+                    nextDirection = newDirection;
+                    
+                    // Tocar som de movimento se a direção mudou
+                    if (soundEnabled && previousDirection !== nextDirection) {
+                        moveSound.currentTime = 0;
+                        moveSound.play();
+                    }
+                }
+            });
+        }
         
-        document.getElementById('down').addEventListener('click', () => {
-            if (direction !== 'up') nextDirection = 'down';
-        });
-        
-        document.getElementById('left').addEventListener('click', () => {
-            if (direction !== 'right') nextDirection = 'left';
-        });
-        
-        document.getElementById('right').addEventListener('click', () => {
-            if (direction !== 'left') nextDirection = 'right';
-        });
+        setupTouchControl('up', 'up');
+        setupTouchControl('down', 'down');
+        setupTouchControl('left', 'left');
+        setupTouchControl('right', 'right');
         
         // Botões de anúncio
         donateButton.addEventListener('click', () => {
             // Substitua pelo link de doação
-            window.location.href = 'https://exemplo.com/doacao';
+            window.location.href = 'https://xallleep.github.io/Doe/';
         });
         
         closeAdButton.addEventListener('click', () => {
@@ -836,6 +946,23 @@
         
         // Reiniciar o jogo
         restartButton.addEventListener('click', initGame);
+        
+        // Controles de som
+        toggleMusicBtn.addEventListener('click', () => {
+            musicEnabled = !musicEnabled;
+            if (musicEnabled) {
+                backgroundMusic.play();
+                toggleMusicBtn.textContent = '🔈 Música';
+            } else {
+                backgroundMusic.pause();
+                toggleMusicBtn.textContent = '🔇 Música';
+            }
+        });
+        
+        toggleSoundBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            toggleSoundBtn.textContent = soundEnabled ? '🔊 Sons' : '🔇 Sons';
+        });
         
         // Iniciar o carregamento quando a página carregar
         window.addEventListener('load', simulateLoading);
